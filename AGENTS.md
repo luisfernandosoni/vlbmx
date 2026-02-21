@@ -134,7 +134,7 @@ To ensure the highest standards, the following skills MUST be utilized.
 |Architecture & Cloud:{senior-architect,cloudflare-dev-expert,hetzner-expert,database-design,api-patterns,docker-expert}
 |UI/UX & Frontend:{ui-ux-pro-max,frontend-design,tailwind-design-system,nextjs-app-router-patterns,mobile-design,scroll-experience}
 |Scraping & Data:{browser-automation,python-pro}
-|Security Pack:{ethical-hacking-methodology,burp-suite-testing,security-auditor,api-security-best-practices,auth-implementation-patterns,cc-skill-security-review}
+|Security Pack:{ethical-hacking-methodology,burp-suite-testing,security-auditor,api-security-best-practices,auth-implementation-patterns,better-auth-best-practices,better-auth-security-best-practices,cc-skill-security-review}
 |Business & Growth:{launch-strategy,seo-audit,kpi-dashboard-design,content-creator,mercadopago-expert,programmatic-seo}
 
 ## 10. Post-Mortem & Discipline ("Never Again")

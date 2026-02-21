@@ -1,0 +1,60 @@
+
+> vlbmx@0.1.0 build
+> npm run cf-typegen && next build
+
+
+> vlbmx@0.1.0 cf-typegen
+> wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts
+
+
+ Ôøà´©Å wrangler 4.67.0
+ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+Generating project types...
+
+declare namespace Cloudflare {
+	interface PreviewEnv {
+		DB: D1Database;
+	}
+	interface Env {
+		DB: D1Database;
+		ASSETS?: Fetcher;
+	}
+}
+interface CloudflareEnv extends Cloudflare.Env {}
+
+Generating runtime types...
+
+Runtime types generated.
+
+
+Ô£¿ Types written to cloudflare-env.d.ts
+
+­ƒôû Read about runtime types
+https://developers.cloudflare.com/workers/languages/typescript/#generate-types
+­ƒôú Remember to rerun 'wrangler types' after you change your wrangler.toml file.
+
+ÔÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of E:\Antigravity\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * E:\Antigravity\vlbmx\package-lock.json
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 1880.5ms
+  Running TypeScript ...
+Failed to compile.
+
+./components/auth/SignInButton.tsx:6:28
+Type error: Cannot find module '@/lib/auth-client' or its corresponding type declarations.
+
+  4 | import { motion, AnimatePresence } from "motion/react";
+  5 | import { Chrome, Facebook, Loader2 } from "lucide-react";
+> 6 | import { authClient } from "@/lib/auth-client";
+    |                            ^
+  7 |
+  8 | export default function SignInButton() {
+  9 |   const [isOpen, setIsOpen] = useState(false);
+Next.js build worker exited with code: 1 and signal: null
