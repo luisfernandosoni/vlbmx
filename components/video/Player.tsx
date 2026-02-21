@@ -10,28 +10,27 @@ interface PlayerProps {
   src: string;
   title?: string;
   poster?: string;
-  className?: string; // Additional Tailwind styling if needed
+  className?: string;
 }
 
 export default function Player({ src, title, poster, className = "" }: PlayerProps) {
   return (
-    <div className={`w-full overflow-hidden rounded-2xl border border-zinc-800 shadow-2xl shadow-black/50 ${className}`}>
-      <MediaPlayer 
-        src={src} 
-        title={title} 
+    // @ui-ux-pro-max: aspect-video prevents CLS (Cumulative Layout Shift) on mobile
+    <div className={`w-full aspect-video overflow-hidden rounded-2xl border border-zinc-800 shadow-2xl shadow-black/50 ${className}`}>
+      <MediaPlayer
+        src={src}
+        title={title}
         poster={poster}
         viewType="video"
         streamType="on-demand"
         crossOrigin
+        playsInline  // @mobile-design: Critical for iOS — prevents native fullscreen hijack
       >
         <MediaProvider />
-        {/* We use the default layout but hook into its CSS via globals to enforce our dark theme */}
-        <DefaultVideoLayout 
-            icons={defaultLayoutIcons} 
-            colorScheme="dark"
-            slots={{
-               // Optional: We can inject custom UI into player slots later
-            }}
+        {/* @ui-ux-pro-max: DefaultVideoLayout enforces dark theme */}
+        <DefaultVideoLayout
+          icons={defaultLayoutIcons}
+          colorScheme="dark"
         />
       </MediaPlayer>
     </div>
