@@ -9,3 +9,13 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vlbmx-db"
+database_id = "9bb4c4de-d359-4c5b-be1d-12155c488d5e"
+
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "vlbmx-db-preview"
+database_id = "7a14c2ae-8949-4df6-b57c-8b1381e695d9"

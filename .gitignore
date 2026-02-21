@@ -41,6 +41,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# cloudflare auto-generated types (regenerate with: npm run cf-typegen)
+cloudflare-env.d.ts
+
+# temporary D1 provisioning artifacts
+d1_info.json
+d1_preview_info.json
+
 # utility scripts (not part of the app)
 skills_summary.md
 summarize_skills.py
