@@ -1,0 +1,1 @@
+This folder contains the built output assets for the worker "vlbmx-chat" generated at 2026-02-22T20:25:05.704Z.

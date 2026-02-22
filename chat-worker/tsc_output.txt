@@ -1,0 +1,1 @@
+src/db/migrations/index.ts(2,19): error TS2307: Cannot find module './0000_damp_zemo.sql' or its corresponding type declarations.

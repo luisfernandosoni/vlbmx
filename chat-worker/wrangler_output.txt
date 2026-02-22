@@ -1,0 +1,25 @@
+
+ Ôøà´©Å wrangler 3.114.17 (update available 4.67.0)
+-----------------------------------------------
+
+Ôû▓ [WARNING] The version of Wrangler you are using is now out-of-date.
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+
+X [ERROR] Build failed with 1 error:
+
+  X [ERROR] No loader is configured for ".sql" files: src/db/migrations/0000_damp_zemo.sql
+  
+      src/db/migrations/index.ts:4:18:
+        4 Ôöé import m0000 from "./0000_damp_zemo.sql";
+          ÔòÁ                   ~~~~~~~~~~~~~~~~~~~~~~
+  
+  
+
+
+­ƒ¬Á  Logs were written to "C:\Users\sonig\AppData\Roaming\xdg.config\.wrangler\logs\wrangler-2026-02-22_20-28-19_336.log"
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76
