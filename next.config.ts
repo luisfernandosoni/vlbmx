@@ -17,8 +17,8 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               // Allow media from HLS proxy domains (update to Hetzner IP when live)
               "media-src 'self' blob: https://files.vidstack.io https://*.vidstack.io",
-              // Allow HLS manifest/segment fetch
-              "connect-src 'self' https://files.vidstack.io https://*.vidstack.io",
+              // Allow HLS manifest/segment fetch and local dev websockets
+              "connect-src 'self' ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:* https://files.vidstack.io https://*.vidstack.io",
               "img-src 'self' data: blob: https://files.vidstack.io https://*.vidstack.io",
               "frame-ancestors 'none'",
             ].join("; "),
@@ -32,6 +32,15 @@ const nextConfig: NextConfig = {
             value: "nosniff",
           },
         ],
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/chat/:path*",
+        // Proxies local Dev chat-worker. In Prod, Cloudflare routes this directly to the worker.
+        destination: "http://127.0.0.1:8787/api/chat/:path*",
       },
     ];
   },

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { motion } from "motion/react";
 import Player from "@/components/video/Player";
 import SignInButton from "@/components/auth/SignInButton";
+import ChatRoom from "@/components/chat/ChatRoom";
 
 export default function Home() {
   return (
@@ -59,21 +60,36 @@ export default function Home() {
           </motion.p>
         </motion.div>
 
-        {/* @ui-ux-pro-max: Motion 12 entrance for player container */}
-        <motion.div
-          className="w-full max-w-5xl mx-auto rounded-3xl p-2 bg-white/5 backdrop-blur-3xl border border-white/10 shadow-2xl shadow-black"
-          initial={{ opacity: 0, y: 32, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <Suspense fallback={<div className="w-full aspect-video bg-zinc-900 animate-pulse rounded-2xl" />}>
-            <Player
-              src="https://files.vidstack.io/sprite-fight/hls/stream.m3u8"
-              title="Sprite Fight (HLS Test Stream)"
-              poster="https://files.vidstack.io/sprite-fight/poster.webp"
-            />
-          </Suspense>
-        </motion.div>
+        {/* Main Content Layout: Player + Chat */}
+        <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 relative z-10">
+          
+          {/* @ui-ux-pro-max: Motion 12 entrance for player container */}
+          <motion.div
+            className="flex-[2] rounded-3xl p-2 bg-white/5 backdrop-blur-3xl border border-white/10 shadow-2xl shadow-black h-fit"
+            initial={{ opacity: 0, y: 32, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Suspense fallback={<div className="w-full aspect-video bg-zinc-900 animate-pulse rounded-2xl" />}>
+              <Player
+                src="https://files.vidstack.io/sprite-fight/hls/stream.m3u8"
+                title="Sprite Fight (HLS Test Stream)"
+                poster="https://files.vidstack.io/sprite-fight/poster.webp"
+              />
+            </Suspense>
+          </motion.div>
+
+          {/* Chat Room Integration */}
+          <motion.div
+            className="flex-1 w-full lg:min-w-[400px]"
+            initial={{ opacity: 0, x: 32, scale: 0.98 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <ChatRoom roomId="vlbmx-main" />
+          </motion.div>
+
+        </div>
 
       </section>
     </main>

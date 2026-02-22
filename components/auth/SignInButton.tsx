@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Chrome, Facebook, Loader2 } from "lucide-react";
-import { authClient } from "../../lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 
 export default function SignInButton() {
   const [isOpen, setIsOpen] = useState(false);

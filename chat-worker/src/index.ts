@@ -16,6 +16,42 @@ const messageSchema = z.object({
 
 export interface Env {
   CHAT_ROOM: DurableObjectNamespace;
+  BETTER_AUTH_URL: string;
+}
+
+// Security: Validate Bearer token or ?.token query string against Better Auth
+async function validateToken(request: Request, env: Env): Promise<{ user: { id: string, name: string } } | null> {
+  const url = new URL(request.url);
+  let token = url.searchParams.get("token");
+  
+  if (!token) {
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.substring(7);
+    }
+  }
+
+  if (!token) return null;
+
+  try {
+    const headers = new Headers();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    
+    // Pass along the cookie so HttpOnly sessions work natively for same-domain deployments
+    const cookieHeader = request.headers.get("Cookie");
+    if (cookieHeader) headers.set("Cookie", cookieHeader);
+
+    const res = await fetch(`${env.BETTER_AUTH_URL}/api/auth/get-session`, {
+      headers
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { user?: { id: string, name: string } };
+    if (!data || !data.user) return null;
+    return data as { user: { id: string, name: string } };
+  } catch (err) {
+    console.error("Auth validation failed:", err);
+    return null;
+  }
 }
 
 export class ChatRoom extends DurableObject {
@@ -77,6 +113,11 @@ export class ChatRoom extends DurableObject {
     // Accept the WebSocket connection with the Hibernation API
     this.ctx.acceptWebSocket(server);
 
+    // Store the authenticated user's identity on the server WebSocket attachment
+    const userId = request.headers.get("X-User-Id") || "anonymous";
+    const userName = request.headers.get("X-User-Name") || "Anonymous";
+    server.serializeAttachment({ userId, userName });
+
     return new Response(null, {
       status: 101,
       webSocket: client,
@@ -99,13 +140,18 @@ export class ChatRoom extends DurableObject {
         ws.send(JSON.stringify({ type: "error", message: "Validation failed" }));
         return;
       }
-      const data = result.data;
+      
+      const attachment = ws.deserializeAttachment();
+      // Enforce the backend's verified identity over the client's payload
+      const userId = attachment?.userId || result.data.userId;
+      const userName = attachment?.userName || result.data.userName;
+      const text = result.data.text;
 
       // Broadcast immediately for low latency
       const payload = JSON.stringify({
         type: "message",
-        userName: data.userName,
-        content: data.text,
+        userName: userName,
+        content: text,
         timestamp: new Date().toISOString()
       });
 
@@ -118,9 +164,9 @@ export class ChatRoom extends DurableObject {
 
       // Persist to embedded SQLite asynchronously
       await this.db.insert(messages).values({
-        userId: data.userId,
-        userName: data.userName,
-        content: data.text,
+        userId: userId,
+        userName: userName,
+        content: text,
       }).execute();
     } catch {
       ws.send(JSON.stringify({ type: "error", message: "Invalid payload" }));
@@ -143,6 +189,31 @@ const chatWorker = {
 
     // Expected format: /api/chat/<room_id> or /api/chat/<room_id>/history
     if (url.pathname.startsWith('/api/chat/')) {
+      // Handle preflight for CORS (if browsers fetch instead of ws connect)
+      if (request.method === "OPTIONS") {
+        return new Response(null, {
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type",
+          }
+        });
+      }
+
+      // Security: Validate Auth Token natively with Better Auth Endpoint
+      const auth = await validateToken(request, env);
+      if (!auth) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+          status: 401, 
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } 
+        });
+      }
+
+      // Reconstruct request to pass secure headers to DO
+      const newRequest = new Request(request);
+      newRequest.headers.set("X-User-Id", auth.user.id);
+      newRequest.headers.set("X-User-Name", auth.user.name);
+
       const parts = url.pathname.split('/');
       const roomId = parts[3];
       
@@ -150,13 +221,10 @@ const chatWorker = {
         return new Response('Room ID is required', { status: 400 });
       }
 
-      // Get or create the Durable Object instance for this room
-      // To ensure global uniqueness per room ID, we use idFromName
       const id = env.CHAT_ROOM.idFromName(roomId);
       const stub = env.CHAT_ROOM.get(id);
 
-      // Forward the request to the Durable Object
-      return stub.fetch(request);
+      return stub.fetch(newRequest);
     }
 
     return new Response("Not found", { status: 404 });
