@@ -39,6 +39,7 @@
 2.  **The Persistence Mandate**: Deleting rules or simplifying granular technical constraints in this file is STRICTLY FORBIDDEN.
 3.  **Real-Time Informing**: You MUST inform the user of **EVERY SINGLE SKILL USE** at the very time it is being applied. At all times.
 4.  **Discipline: MercadoPago Webhooks Zero-Trust**: NEVER trust the `body` payload of any incoming webhook. Implement **Zero-Trust Validation**: Extract the ID trigger from the payload, verify the signature, and ALWAYS run an immediate server-to-server GET call.
+5.  **Discipline: Standalone Worker Subdirectories**: Any standalone Cloudflare Worker subdirectory (e.g., `chat-worker/`) with its own `tsconfig.json` MUST be added to the root `tsconfig.json`'s `exclude` array. The root `**/*.ts` glob will pull it into Next.js type-checking, causing `Cloudflare.Env` type collisions between the main app's `Env` (with `DB`) and the worker's `Env` (with different bindings).
 
 ## 5. Critical Knowledge & Core Skills Excerpts
 
