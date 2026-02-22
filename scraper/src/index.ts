@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { chromium, Browser, BrowserContext, Page } from 'playwright-extra';
-import { extractRojaDirecta } from './extractors/rojadirecta';
+import { chromium } from 'playwright-extra';
+import { Browser, BrowserContext, Page } from 'playwright';
 import stealth from 'puppeteer-extra-plugin-stealth';
 import dotenv from 'dotenv';
 
@@ -90,9 +90,8 @@ app.post('/api/scrape', requireAuth, async (req: Request, res: Response) => {
     await page.mouse.move(100, 100);
     await page.waitForTimeout(2000); // 2 second pause to let JS / anti-bots settle
 
-    // Extract HTML content
-    // Execute the specialized RojaDirecta extraction routine
-    const extractionResult = await extractRojaDirecta(page);
+    // In the future: Add strategy-based extraction based on URL
+    const extractionResult = { data: 'Extraction logic pending for premium platforms' };
 
     // Clean up
     await context.close();
@@ -101,8 +100,7 @@ app.post('/api/scrape', requireAuth, async (req: Request, res: Response) => {
     return res.json({ 
       success: true, 
       url, 
-      ...extractionResult,
-      contentLength: content.length 
+      ...extractionResult
     });
 
   } catch (error: any) {
