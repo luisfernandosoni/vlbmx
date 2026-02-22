@@ -12,6 +12,12 @@
   "observability": {
     "enabled": true
   },
+  // H3 FIX: Worker env vars for auth validation and CORS (@cloudflare-dev-expert)
+  // In production, use `wrangler secret put` for sensitive values
+  "vars": {
+    "BETTER_AUTH_URL": "http://localhost:3001",
+    "ALLOWED_ORIGIN": "http://localhost:3001"
+  },
   "durable_objects": {
     "bindings": [
       {

@@ -27,7 +27,18 @@ export default function ChatRoom({ roomId }: { roomId: string }) {
 
     const fetchHistory = async () => {
       try {
-        const res = await fetch(`/api/chat/${roomId}/history`);
+        // H4 FIX: Connect directly to the Cloudflare Worker to bypass Next.js proxy
+        const workerUrl = process.env.NODE_ENV === "development" 
+          ? "http://127.0.0.1:8787" 
+          : "https://vlbmx-chat.your-account.workers.dev"; // TODO: set via env
+
+        // Pass token in header for auth validation by the Worker
+        const res = await fetch(`${workerUrl}/api/chat/${roomId}/history`, {
+          headers: {
+            "Authorization": `Bearer ${session?.session?.token || ''}`
+          }
+        });
+
         if (res.ok) {
           const history = await res.json() as Omit<Message, "type">[];
           // history is ordered desc by DO, we need it asc for UI
@@ -44,10 +55,13 @@ export default function ChatRoom({ roomId }: { roomId: string }) {
     const connect = () => {
       if (!session?.user) return; // Only connect if authenticated natively via cookies
       
-      // We connect to the same-origin Next.js proxy, which forwards to the Worker.
-      // This ensures cookies are sent automatically for Better Auth validation.
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/api/chat/${roomId}`;
+      // H4 FIX: We connect directly to the Cloudflare Worker in dev because Next.js
+      // rewrites cannot proxy WebSocket upgrade requests. We pass the token via query param
+      // since browsers don't allow setting custom headers (like Authorization) on WebSockets.
+      const wsProtocol = process.env.NODE_ENV === "development" ? "ws:" : "wss:";
+      const wsHost = process.env.NODE_ENV === "development" ? "127.0.0.1:8787" : "vlbmx-chat.your-account.workers.dev";
+      
+      const wsUrl = `${wsProtocol}//${wsHost}/api/chat/${roomId}?token=${session?.session?.token || ''}`;
       
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
@@ -89,7 +103,7 @@ export default function ChatRoom({ roomId }: { roomId: string }) {
       clearTimeout(reconnectTimer);
       wsRef.current?.close();
     };
-  }, [roomId, session?.user]);
+  }, [roomId, session?.user, session?.session?.token]);
 
   // Auto-scroll inside effect
   useEffect(() => {

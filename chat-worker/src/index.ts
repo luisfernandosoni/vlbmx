@@ -7,16 +7,19 @@ import { messages } from "./db/schema";
 import migrations from "./db/migrations";
 
 // C1: Strict input validation schema (@security-auditor)
+// C3 FIX: userId/userName are optional from client — the DO enforces identity
+// from the server-side WebSocket attachment set during auth validation
 const messageSchema = z.object({
   type: z.literal("message"),
-  userId: z.string().min(1).max(128),
-  userName: z.string().min(1).max(64),
+  userId: z.string().min(1).max(128).optional(),
+  userName: z.string().min(1).max(64).optional(),
   text: z.string().min(1).max(2000),
 });
 
 export interface Env {
   CHAT_ROOM: DurableObjectNamespace;
   BETTER_AUTH_URL: string;
+  ALLOWED_ORIGIN: string; // H1 FIX: explicit CORS origin instead of wildcard *
 }
 
 // Security: Validate Bearer token or ?.token query string against Better Auth
@@ -98,7 +101,7 @@ export class ChatRoom extends DurableObject {
         headers: {
           "Content-Type": "application/json",
           // M3: CORS for cross-origin front-end (@api-patterns)
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": (this.env as Env).ALLOWED_ORIGIN || "*",
         }
       });
     }
@@ -186,6 +189,8 @@ export class ChatRoom extends DurableObject {
 const chatWorker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    // H1 FIX: Use env-based CORS origin instead of wildcard * (@security-auditor)
+    const corsOrigin = env.ALLOWED_ORIGIN || "*";
 
     // Expected format: /api/chat/<room_id> or /api/chat/<room_id>/history
     if (url.pathname.startsWith('/api/chat/')) {
@@ -193,7 +198,7 @@ const chatWorker = {
       if (request.method === "OPTIONS") {
         return new Response(null, {
           headers: {
-            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Origin": corsOrigin,
             "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
             "Access-Control-Allow-Headers": "Authorization, Content-Type",
           }
@@ -205,7 +210,7 @@ const chatWorker = {
       if (!auth) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), { 
           status: 401, 
-          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } 
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": corsOrigin } 
         });
       }
 

@@ -55,3 +55,29 @@ export const verification = sqliteTable("verification", {
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull()
 });
+
+// C2 FIX: apikey table required by Better Auth apiKey() plugin
+// @database-design
+export const apikey = sqliteTable("apikey", {
+  id: text("id").primaryKey(),
+  name: text("name"),
+  start: text("start"),
+  prefix: text("prefix"),
+  key: text("key").notNull(),
+  userId: text("userId").notNull().references(() => user.id, { onDelete: 'cascade' }),
+  refillInterval: integer("refillInterval"),
+  refillAmount: integer("refillAmount"),
+  lastRefillAt: integer("lastRefillAt", { mode: "timestamp" }),
+  enabled: integer("enabled", { mode: "boolean" }),
+  rateLimitEnabled: integer("rateLimitEnabled", { mode: "boolean" }),
+  rateLimitTimeWindow: integer("rateLimitTimeWindow"),
+  rateLimitMax: integer("rateLimitMax"),
+  requestCount: integer("requestCount"),
+  remaining: integer("remaining"),
+  lastRequest: integer("lastRequest", { mode: "timestamp" }),
+  expiresAt: integer("expiresAt", { mode: "timestamp" }),
+  createdAt: integer("createdAt", { mode: "timestamp" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp" }),
+  permissions: text("permissions"),
+  metadata: text("metadata")
+});

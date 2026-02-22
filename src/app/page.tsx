@@ -1,3 +1,5 @@
+"use client";
+
 import { Suspense } from "react";
 import { motion } from "motion/react";
 import Player from "@/components/video/Player";

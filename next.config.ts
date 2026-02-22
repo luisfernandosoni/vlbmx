@@ -16,9 +16,9 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               // Allow media from HLS proxy domains (update to Hetzner IP when live)
-              "media-src 'self' blob: https://files.vidstack.io https://*.vidstack.io",
-              // Allow HLS manifest/segment fetch and local dev websockets
-              "connect-src 'self' ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:* https://files.vidstack.io https://*.vidstack.io",
+              "media-src 'self' blob: https://files.vidstack.io https://*.vidstack.io https://vlbmx.com",
+              // M2 FIX: Added production Cloudflare Worker domain for WebSockets
+              "connect-src 'self' ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:* wss://*.workers.dev https://files.vidstack.io https://*.vidstack.io",
               "img-src 'self' data: blob: https://files.vidstack.io https://*.vidstack.io",
               "frame-ancestors 'none'",
             ].join("; "),
@@ -35,15 +35,8 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  async rewrites() {
-    return [
-      {
-        source: "/api/chat/:path*",
-        // Proxies local Dev chat-worker. In Prod, Cloudflare routes this directly to the worker.
-        destination: "http://127.0.0.1:8787/api/chat/:path*",
-      },
-    ];
-  },
+  // H4 FIX: Removed rewrite block. Next.js rewriting cannot proxy WebSocket upgrades.
+  // The client will now connect directly to the Worker in local dev.
 };
 
 export default nextConfig;
