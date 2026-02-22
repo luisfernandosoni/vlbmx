@@ -24,8 +24,9 @@ const migrations = migrationFiles.map((file) => {
 // Generate the index.ts content
 let indexContent = `import journal from "./meta/_journal.json";\n`;
 
-// Add imports
+// Add imports with @ts-expect-error for .sql files (Wrangler esbuild text loader)
 migrations.forEach((migration) => {
+    indexContent += `// @ts-expect-error - Wrangler esbuild custom rule treats .sql as text\n`;
     indexContent += `import ${migration.name} from "./${migration.file}";\n`;
 });
 

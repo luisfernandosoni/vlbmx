@@ -1,8 +1,18 @@
 import { DurableObject } from "cloudflare:workers";
 import { drizzle, type DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
+import { z } from "zod";
+import { desc } from "drizzle-orm";
 import { messages } from "./db/schema";
 import migrations from "./db/migrations";
+
+// C1: Strict input validation schema (@security-auditor)
+const messageSchema = z.object({
+  type: z.literal("message"),
+  userId: z.string().min(1).max(128),
+  userName: z.string().min(1).max(64),
+  text: z.string().min(1).max(2000),
+});
 
 export interface Env {
   CHAT_ROOM: DurableObjectNamespace;
@@ -13,9 +23,14 @@ export class ChatRoom extends DurableObject {
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+
+    // H1: Auto ping/pong without waking the DO from hibernation (@cloudflare-dev-expert)
+    this.ctx.setWebSocketAutoResponse(
+      new WebSocketRequestResponsePair("ping", "pong")
+    );
+
     // Initialize Drizzle with the synchronous SQLite storage instance
-    // Note: Type assertion used to bridge @cloudflare/workers-types and drizzle-orm
-    this.db = drizzle(this.ctx.storage as any, { logger: false });
+    this.db = drizzle(this.ctx.storage, { logger: false });
     
     // Ensure migrations run BEFORE any fetch or WebSocket events are processed
     this.ctx.blockConcurrencyWhile(async () => {
@@ -23,13 +38,11 @@ export class ChatRoom extends DurableObject {
         await migrate(this.db, migrations);
       } catch (err: unknown) {
         const error = err as Error;
-        if (error.message && error.message.includes("does not contain index file")) {
-          // No migrations needed yet
-        } else {
-          console.error("Migration error:", error);
-          // Retry once as seen in workersai pattern for transient DO locks
-          await migrate(this.db, migrations);
-        }
+        // H4: Swallow known safe errors, fail-fast on real issues (@senior-architect)
+        if (error.message?.includes("already been applied")) return;
+        if (error.message?.includes("does not contain index file")) return;
+        console.error("Fatal migration error:", error);
+        throw error;
       }
     });
   }
@@ -38,10 +51,19 @@ export class ChatRoom extends DurableObject {
     const url = new URL(request.url);
 
     if (url.pathname.endsWith("/history")) {
-      // Return the last 50 messages
-      const history = await this.db.select().from(messages).limit(50).execute();
+      // H2: Explicit ORDER BY for deterministic results (@database-design)
+      const history = await this.db
+        .select()
+        .from(messages)
+        .orderBy(desc(messages.timestamp))
+        .limit(50)
+        .execute();
       return new Response(JSON.stringify(history), {
-        headers: { "Content-Type": "application/json" }
+        headers: {
+          "Content-Type": "application/json",
+          // M3: CORS for cross-origin front-end (@api-patterns)
+          "Access-Control-Allow-Origin": "*",
+        }
       });
     }
 
@@ -62,36 +84,52 @@ export class ChatRoom extends DurableObject {
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
+    // C3: Explicitly reject binary frames (@systematic-debugging)
+    if (typeof message !== "string") {
+      ws.send(JSON.stringify({ type: "error", message: "Binary not supported" }));
+      return;
+    }
+
     try {
-      const data = JSON.parse(message as string);
-      
-      if (data.type === "message") {
-        // Broadcast immediately for low latency
-        const payload = JSON.stringify({
-          type: "message",
-          userName: data.userName,
-          content: data.text,
-          timestamp: new Date().toISOString()
-        });
+      const parsed = JSON.parse(message);
 
-        for (const client of this.ctx.getWebSockets()) {
-          client.send(payload);
-        }
-
-        // Persist to embedded SQLite asynchronously
-        await this.db.insert(messages).values({
-            userId: data.userId,
-            userName: data.userName,
-            content: data.text,
-        }).execute();
+      // C1: Validate all client input with Zod (@security-auditor)
+      const result = messageSchema.safeParse(parsed);
+      if (!result.success) {
+        ws.send(JSON.stringify({ type: "error", message: "Validation failed" }));
+        return;
       }
+      const data = result.data;
+
+      // Broadcast immediately for low latency
+      const payload = JSON.stringify({
+        type: "message",
+        userName: data.userName,
+        content: data.text,
+        timestamp: new Date().toISOString()
+      });
+
+      // H5: Exclude sender from broadcast — front-end renders optimistically (@api-patterns)
+      for (const client of this.ctx.getWebSockets()) {
+        if (client !== ws) {
+          try { client.send(payload); } catch { /* stale socket, ignore */ }
+        }
+      }
+
+      // Persist to embedded SQLite asynchronously
+      await this.db.insert(messages).values({
+        userId: data.userId,
+        userName: data.userName,
+        content: data.text,
+      }).execute();
     } catch {
       ws.send(JSON.stringify({ type: "error", message: "Invalid payload" }));
     }
   }
 
   async webSocketClose(ws: WebSocket, code: number, reason: string) {
-    console.log(`WebSocket closed: code=${code}, reason=${reason}`);
+    // C2: Complete the WebSocket close handshake per CF docs (@cloudflare-dev-expert)
+    ws.close(code, reason);
   }
 
   async webSocketError(ws: WebSocket, error: unknown) {
