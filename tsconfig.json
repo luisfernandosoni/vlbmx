@@ -31,5 +31,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "scraper", ".open-next"]
+  "exclude": ["node_modules", "scraper", ".open-next", "chat-worker"]
 }
