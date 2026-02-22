@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  scraper:
+    build: .
+    image: vlbmx-scraper:latest
+    container_name: vlbmx_scraper
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - API_KEY=${API_KEY}
+    restart: always
+    
+    # Crucial optimizations for preventing Chromium crashes on Docker/Hetzner
+    ipc: host 
+    shm_size: '1gb'
+    security_opt:
+      - seccomp=unconfined
